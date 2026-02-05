@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan Pro - Akurasi Tinggi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <style>
+        .status-rendah {
+            background-color: #22c55e;
+        }
+
+        .status-sedang {
+            background-color: #eab308;
+        }
+
+        .status-tinggi {
+            background-color: #ef4444;
+        }
+
+        /* Overlay Style */
+        .scanner-overlay {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6;
+            animation: scan 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes scan {
+            0% {
+                top: 0%;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl flex flex-col">
+        <header class="bg-blue-600 text-white p-5 text-center">
+            <h1 class="text-xl font-black tracking-tighter uppercase">NutriScan v2.0</h1>
+            <p class="text-[10px] uppercase tracking-widest opacity-80">Accuracy Optimization Enabled</p>
+        </header>
+
+        <main class="p-4 flex-grow">
+            <div class="scanner-overlay border-2 border-blue-400 bg-black aspect-video flex items-center justify-center mb-4 group cursor-pointer"
+                onclick="document.getElementById('imageInput').click()">
+                <div id="scanLine" class="scanner-line"></div>
+                <div class="absolute inset-0 border-[30px] border-black/40 pointer-events-none"></div>
+                <div class="text-center p-4">
+                    <p class="text-white text-xs font-bold mb-2">📸 TAP UNTUK SCAN LABEL</p>
+                    <p class="text-gray-400 text-[9px]">Pastikan label rata & teks terlihat jelas dalam kotak</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+            </div>
+
+            <p id="ocrStatus" class="text-center text-xs font-bold text-blue-600 mb-4 animate-pulse"></p>
+
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-black text-blue-900 uppercase">Konfirmasi Data</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold">Porsi:</span>
+                        <input type="number" id="multiplier" value="1" min="1"
+                            class="w-12 text-center rounded border-blue-300 border py-1 font-bold text-blue-600">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Gula (g)</label>
+                        <input type="number" id="val-gula" step="0.001"
+                            class="w-full p-2 border rounded-lg focus:ring-2 ring-blue-400 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Lemak (g)</label>
+                        <input type="number" id="val-lemak" step="0.001"
+                            class="w-full p-2 border rounded-lg focus:ring-2 ring-blue-400 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Garam (mg)</label>
+                        <input type="number" id="val-garam" step="0.001"
+                            class="w-full p-2 border rounded-lg focus:ring-2 ring-blue-400 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Energi (kkal)</label>
+                        <input type="number" id="val-energi" step="0.001"
+                            class="w-full p-2 border rounded-lg focus:ring-2 ring-blue-400 outline-none transition-all">
+                    </div>
+                </div>
+                <div id="sanityWarning"
+                    class="hidden mt-3 p-2 bg-red-100 border border-red-200 text-red-700 text-[10px] rounded-lg italic font-medium uppercase">
+                    ⚠️ Angka terdeteksi sangat tinggi! Mohon periksa kembali kesesuaian dengan label.
+                </div>
+            </div>
+
+            <button onclick="calculate()"
+                class="w-full bg-blue-600 text-white py-4 rounded-xl font-black shadow-xl hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest">
+                Analisis Gizi
+            </button>
+
+            <div id="resultArea" class="hidden mt-6 pb-10">
+                <div id="detailResults" class="grid grid-cols-1 gap-2"></div>
+                <div id="finalConclusion"
+                    class="mt-4 p-5 rounded-2xl text-center font-black uppercase tracking-tight shadow-lg"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const LIMITS = { gula: 50, lemak: 67, garam: 2000, energi: 2100 };
+        const ALIAS = {
+            gula: ["gula", "gula total", "sukrosa", "glukosa", "fruktosa", "maltosa", "laktosa"],
+            garam: ["natrium", "sodium", "garam"],
+            lemak: ["lemak", "lemak total", "total lemak", "lipid"],
+            energi: ["energi", "energi total", "kalori", "kkal", "calories"]
+        };
+
+        // Poin 2: OCR Optimization (Whitelist)
+        document.getElementById('imageInput').addEventListener('change', async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('scanLine').style.display = 'block';
+            document.getElementById('ocrStatus').innerText = "MENGEKSTRAKSI DATA...";
+
+            try {
+                const worker = Tesseract.createWorker();
+                await worker.load();
+                await worker.loadLanguage('ind+eng');
+                await worker.initialize('ind+eng');
+                // Mengatur whitelist agar hanya fokus pada angka dan pemisah desimal
+                await worker.setParameters({
+                    tessedit_char_whitelist: '0123456789.,',
+                });
+
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                document.getElementById('scanLine').style.display = 'none';
+                document.getElementById('ocrStatus').innerText = "SCAN SELESAI!";
+                extractData(text.toLowerCase());
+            } catch (err) {
+                document.getElementById('ocrStatus').innerText = "GAGAL SCAN, SILAKAN INPUT MANUAL";
+            }
+        });
+
+        function extractData(text) {
+            let foundAny = false;
+            Object.keys(ALIAS).forEach(key => {
+                const words = ALIAS[key];
+                words.forEach(word => {
+                    const regex = new RegExp(`${word}\\s*[:=-]?\\s*(\\d+[.,]?\\d*)`, 'i');
+                    const match = text.match(regex);
+                    if (match && match[1]) {
+                        let val = parseFloat(match[1].replace(',', '.'));
+                        if (val > 0) {
+                            document.getElementById(`val-${key}`).value = val;
+                            foundAny = true;
+                        }
+                    }
+                });
+            });
+            checkSanity();
+        }
+
+        // Poin 4: Sanity Check Logic
+        function checkSanity() {
+            const inputs = ['val-gula', 'val-lemak', 'val-garam', 'val-energi'];
+            let isSuspicious = false;
+            inputs.forEach(id => {
+                const val = parseFloat(document.getElementById(id).value) || 0;
+                // Jika input melebihi 200 (untuk gram) atau 1000 (untuk mg/kkal), beri peringatan
+                if (val > 200 && id !== 'val-garam' && id !== 'val-energi') isSuspicious = true;
+                if (val > 1500) isSuspicious = true;
+            });
+            document.getElementById('sanityWarning').classList.toggle('hidden', !isSuspicious);
+        }
+
+        function calculate() {
+            const mult = parseFloat(document.getElementById('multiplier').value) || 1;
+            const data = {
+                gula: (parseFloat(document.getElementById('val-gula').value) || 0) * mult,
+                lemak: (parseFloat(document.getElementById('val-lemak').value) || 0) * mult,
+                garam: (parseFloat(document.getElementById('val-garam').value) || 0) * mult,
+                energi: (parseFloat(document.getElementById('val-energi').value) || 0) * mult
+            };
+
+            let highCount = 0, hasMedium = false, htmlResults = '';
+
+            Object.keys(data).forEach(key => {
+                const perc = Math.min((data[key] / LIMITS[key]) * 100, 2000).toFixed(3);
+                let cat = "RENDAH", col = "status-rendah";
+
+                if (perc > 66) { cat = "TINGGI"; col = "status-tinggi"; highCount++; }
+                else if (perc > 33) { cat = "SEDANG"; col = "status-sedang"; hasMedium = true; }
+
+                htmlResults += `
+                    <div class="flex justify-between items-center bg-white p-3 border-l-4 ${col.replace('status-', 'border-')} shadow-sm rounded-r-lg">
+                        <span class="text-xs font-black uppercase text-gray-600">${key}</span>
+                        <span class="font-mono text-xs font-bold text-gray-400">${perc}%</span>
+                        <span class="${col} text-white px-3 py-1 rounded-full text-[9px] font-black">${cat}</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('detailResults').innerHTML = htmlResults;
+            const res = document.getElementById('finalConclusion');
+
+            if (highCount >= 2) {
+                res.innerText = "Sebaiknya sangat dibatasi";
+                res.className = "mt-4 p-5 rounded-2xl text-center font-black uppercase bg-red-600 text-white";
+            } else if (highCount === 1) {
+                res.innerText = "Disarankan untuk mengurangi porsi";
+                res.className = "mt-4 p-5 rounded-2xl text-center font-black uppercase bg-orange-500 text-white";
+            } else if (hasMedium) {
+                res.innerText = "Dapat dikonsumsi secukupnya";
+                res.className = "mt-4 p-5 rounded-2xl text-center font-black uppercase bg-yellow-500 text-white";
+            } else {
+                res.innerText = "Aman dikonsumsi (Porsi Wajar)";
+                res.className = "mt-4 p-5 rounded-2xl text-center font-black uppercase bg-green-600 text-white";
+            }
+
+            document.getElementById('resultArea').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Add event listeners for sanity check on manual input
+        ['val-gula', 'val-lemak', 'val-garam', 'val-energi'].forEach(id => {
+            document.getElementById(id).addEventListener('input', checkSanity);
+        });
+    </script>
+</body>
+
+</html>
