@@ -3,23 +3,21 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUTRISCAN v3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: monospace;
-            padding: 15px;
             background: #f4f4f4;
-            color: #222;
+            padding: 10px;
         }
 
         .box {
-            background: white;
+            background: #fff;
             border: 2px solid #000;
             padding: 20px;
             max-width: 400px;
             margin: auto;
-            box-shadow: 5px 5px 0px #000;
         }
 
         h2 {
@@ -29,94 +27,115 @@
             margin-top: 0;
         }
 
-        .status-msg {
-            font-size: 11px;
-            background: #eee;
-            padding: 5px;
-            border: 1px solid #ccc;
+        .input-item {
             margin-bottom: 15px;
         }
 
-        .input-group {
-            margin-bottom: 10px;
+        .input-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        input[type="number"] {
-            width: 80px;
-            padding: 5px;
+        input {
             border: 1px solid #000;
+            padding: 5px;
+            width: 120px;
             font-family: monospace;
         }
 
-        input[type="file"] {
-            font-size: 11px;
-            margin-bottom: 15px;
+        .info-validasi {
+            font-size: 10px;
+            color: #d00;
+            margin-top: 3px;
+            min-height: 12px;
         }
 
         .btn {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background: #000;
             color: #fff;
             border: none;
-            font-weight: bold;
             cursor: pointer;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .btn-reset {
+            background: #fff;
+            color: #000;
+            border: 1px solid #000;
             margin-top: 10px;
         }
 
-        .btn:hover {
-            background: #444;
-        }
-
-        .result-section {
-            margin-top: 20px;
-            border-top: 2px dashed #000;
-            padding-top: 15px;
-            display: none;
-        }
-
-        .nutri-card {
+        /* Progress Bar Styles */
+        .bar-container {
+            width: 100%;
+            background: #eee;
+            height: 10px;
             border: 1px solid #000;
-            padding: 8px;
-            margin-bottom: 8px;
-            font-size: 12px;
+            margin: 5px 0;
+            position: relative;
         }
 
-        .tag {
-            font-weight: bold;
-            padding: 2px 5px;
-            color: #fff;
-            float: right;
-        }
-
-        /* Klasifikasi Warna Solid */
-        .bg-red {
-            background: #ff0000;
-        }
-
-        .bg-orange {
-            background: #ff8800;
-        }
-
-        .bg-yellow {
-            background: #ffff00;
-            color: #000;
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s;
         }
 
         .bg-green {
             background: #00aa00;
         }
 
-        .summary-box {
-            padding: 15px;
+        .bg-yellow {
+            background: #ffcc00;
+        }
+
+        .bg-red {
+            background: #ff0000;
+        }
+
+        #resultArea {
+            margin-top: 20px;
+            border-top: 2px dashed #000;
+            padding-top: 15px;
+            display: none;
+        }
+
+        .final-verdict {
             text-align: center;
             font-weight: bold;
-            margin-top: 10px;
+            padding: 10px;
             border: 2px solid #000;
-            color: #fff;
+            margin-top: 15px;
+        }
+
+        .pdf-only {
+            display: none;
+        }
+
+        #pdf-content {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Print/PDF specific styles */
+        @media print {
+            .pdf-only {
+                display: block !important;
+            }
+
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            .box {
+                max-width: 100%;
+                padding: 10px;
+            }
         }
     </style>
 </head>
@@ -126,96 +145,279 @@
     <div class="box">
         <h2>NUTRISCAN</h2>
 
-        <div id="status" class="status-msg">PILIH FOTO LABEL UNTUK MEMULAI.</div>
-        <input type="file" id="imageInput" accept="image/*">
-
-        <div class="input-group" style="background:#ffffcc; padding:5px; border:1px solid #999;">
-            <span>JML SAJIAN DIMAKAN:</span>
-            <input type="number" id="multiplier" value="1" min="1">
+        <div id="instruction" style="font-size: 11px; margin-bottom: 10px; text-align: center; color: #555;">
+            <strong>TIPS FOTO YANG BAIK:</strong><br>
+            • Foto dari depan (jangan miring)<br>
+            • Pastikan label terang & fokus<br>
+            • Hindari bayangan & pantulan cahaya<br>
+            • Jika label di botol bulat, ratakan saat foto
         </div>
 
-        <div class="input-group"><span>GULA (g):</span><input type="number" id="v-gula" step="0.1"></div>
-        <div class="input-group"><span>LEMAK (g):</span><input type="number" id="v-lemak" step="0.1"></div>
-        <div class="input-group"><span>GARAM (mg):</span><input type="number" id="v-garam" step="0.1"></div>
-        <div class="input-group"><span>ENERGI (kkal):</span><input type="number" id="v-energi" step="0.1"></div>
+        <div id="ui-input">
+            <input type="file" id="fileInp" accept="image/*" style="width:100%; margin-bottom:15px; font-size: 11px;">
 
-        <button class="btn" onclick="prosesHitung()">ANALISIS SEKARANG</button>
+            <div class="input-item" style="background: #ffffcc; padding: 5px; border: 1px solid #999;">
+                <div class="input-row">
+                    <span>JUMLAH SAJIAN:</span>
+                    <input type="number" id="multiplier" value="1" min="1" oninput="validate(this)">
+                </div>
+                <div id="err-multiplier" class="info-validasi"></div>
+            </div>
 
-        <div id="resultArea" class="result-section">
-            <div id="details"></div>
-            <div id="summary" class="summary-box"></div>
+            <div class="input-item">
+                <div class="input-row"><span>ENERGI (kkal):</span><input type="number" id="v-energi" step="0.001"
+                        oninput="validate(this)"></div>
+                <div id="err-energi" class="info-validasi"></div>
+            </div>
+            <div class="input-item">
+                <div class="input-row"><span>GULA (g):</span><input type="number" id="v-gula" step="0.001"
+                        oninput="validate(this)"></div>
+                <div id="err-gula" class="info-validasi"></div>
+            </div>
+            <div class="input-item">
+                <div class="input-row"><span>GARAM (mg):</span><input type="number" id="v-garam" step="0.001"
+                        oninput="validate(this)"></div>
+                <div id="err-garam" class="info-validasi"></div>
+            </div>
+            <div class="input-item">
+                <div class="input-row"><span>LEMAK (g):</span><input type="number" id="v-lemak" step="0.001"
+                        oninput="validate(this)"></div>
+                <div id="err-lemak" class="info-validasi"></div>
+            </div>
+
+            <button class="btn" onclick="hitung()">HITUNG ANALISIS</button>
+            <button class="btn btn-reset" onclick="window.location.reload()">RESET / SCAN ULANG</button>
+        </div>
+
+        <div id="resultArea">
+            <div id="pdf-content">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;"
+                    class="pdf-only">
+                    <h2 style="margin: 0;">LAPORAN NUTRISCAN</h2>
+                    <p style="font-size: 10px; margin: 5px 0 0 0;">Analisis Nutrisi Makanan</p>
+                </div>
+                <div id="input-summary" class="pdf-only"
+                    style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border: 1px solid #ccc;">
+                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">DATA INPUT:</div>
+                    <div id="input-data" style="font-size: 10px;"></div>
+                </div>
+                <div id="details"></div>
+                <div id="finalVerdict" class="final-verdict"></div>
+                <div class="pdf-only"
+                    style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9px; text-align: center; color: #666;">
+                    Generated by NUTRISCAN - Analisis berdasarkan standar Kemenkes/WHO
+                </div>
+            </div>
+            <button class="btn" style="background: #555;" onclick="exportPDF()">SIMPAN PDF</button>
         </div>
     </div>
 
     <script>
-        const imageInput = document.getElementById('imageInput');
-        const status = document.getElementById('status');
+        function validate(el) {
+            const id = el.id.replace('v-', '');
+            const errEl = document.getElementById('err-' + id);
+            const val = parseFloat(el.value);
+            errEl.innerText = "";
 
-        imageInput.onchange = async () => {
-            if (!imageInput.files[0]) return;
-            status.innerText = "SEDANG MEMPROSES... HARAP TUNGGU.";
+            // Batas maksimal per field sesuai standar Kemenkes/WHO
+            const limits = {
+                'energi': 2100,
+                'gula': 50,
+                'lemak': 67,
+                'garam': 2000,
+                'multiplier': 100
+            };
 
-            const formData = new FormData();
-            formData.append('image', imageInput.files[0]);
+            if (isNaN(val)) {
+                errEl.innerText = "Input wajib angka.";
+            }
+            else if (val < 0) {
+                errEl.innerText = "Nilai tidak boleh negatif.";
+            }
+            else if (limits[id] && val > limits[id]) {
+                errEl.innerText = `Batas maksimal ${limits[id]} tercapai.`;
+            }
+
+            // Cek Logika Energi (validasi tambahan)
+            if (id === 'energi' && val > 0) {
+                const lemak = parseFloat(document.getElementById('v-lemak').value) || 0;
+                if (lemak * 9 > val) {
+                    errEl.innerText = "Energi mungkin terlalu rendah untuk lemak tsb.";
+                }
+            }
+        }
+
+        document.getElementById('fileInp').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Tampilkan status loading dengan animasi
+            const statusMsg = document.getElementById('instruction');
+            let dots = 0;
+            statusMsg.innerHTML = "<strong style='color:#0066cc;'>SCANNING</strong>";
+
+            const loadingInterval = setInterval(() => {
+                dots = (dots + 1) % 4;
+                statusMsg.innerHTML = `<strong style='color:#0066cc;'>SCANNING${'.'.repeat(dots)}</strong><br><small>Harap tunggu 3-6 detik</small>`;
+            }, 500);
+
+            const fd = new FormData();
+            fd.append('image', file);
 
             try {
-                const response = await fetch('/scan', { method: 'POST', body: formData });
-                const data = await response.json();
+                const res = await fetch('/scan', { method: 'POST', body: fd });
+                const responseData = await res.json();
 
-                document.getElementById('v-gula').value = data.gula;
-                document.getElementById('v-lemak').value = data.lemak;
-                document.getElementById('v-garam').value = data.garam;
-                document.getElementById('v-energi').value = data.energi;
-                status.innerText = "SCAN BERHASIL. CEK & SESUAIKAN ANGKA.";
+                clearInterval(loadingInterval);
+
+                // Mengambil data dan daftar nutrisi yang hilang dari backend
+                const data = responseData.data;
+                const missing = responseData.missing;
+                const quality = responseData.quality;
+                const processing = responseData.processing;
+
+                const keys = ['energi', 'gula', 'garam', 'lemak'];
+                keys.forEach(k => {
+                    const input = document.getElementById('v-' + k);
+                    input.value = data[k];
+                    validate(input); // Jalankan validasi real-time untuk setiap input
+                });
+
+                // Build status message with quality info
+                let statusHTML = "";
+
+                // Show processing info
+                if (processing) {
+                    statusHTML += `<div style="font-size:10px; color:#666; margin-bottom:5px;">Proses: ${processing.time}s | Terdeteksi: ${processing.score}</div>`;
+                }
+
+                // Quality warnings
+                if (!quality.is_good && quality.issues && quality.issues.length > 0) {
+                    const issueMap = {
+                        'BLUR': 'Foto kurang fokus/blur',
+                        'TERLALU_GELAP': 'Foto terlalu gelap',
+                        'TERLALU_TERANG': 'Foto terlalu terang (glare)',
+                        'KONTRAS_RENDAH': 'Kontras rendah',
+                        'SHADOW_TIDAK_MERATA': 'Bayangan tidak merata'
+                    };
+                    const issueTexts = quality.issues.map(iss => issueMap[iss] || iss);
+                    statusHTML += `<div style="background:#fff3cd; border:1px solid #ffc107; padding:5px; margin:5px 0; border-radius:3px;">
+                        <strong style="color:#856404;">KUALITAS FOTO:</strong><br>
+                        <small style="color:#856404;">${issueTexts.join(', ')}</small>
+                    </div>`;
+                }
+
+                // FITUR ADOPSI: Pesan Fallback jika data tidak ditemukan
+                if (missing.length > 0) {
+                    statusHTML += `<div style="background:#f8d7da; border:1px solid #dc3545; padding:5px; margin:5px 0; border-radius:3px;">
+                        <strong style="color:#721c24;">DATA TIDAK LENGKAP:</strong><br>
+                        <small style="color:#721c24;">${missing.join(', ').toUpperCase()} tidak terdeteksi. Mohon isi manual atau foto ulang dengan tips di atas.</small>
+                    </div>`;
+                } else {
+                    statusHTML += `<div style="background:#d4edda; border:1px solid #28a745; padding:5px; margin:5px 0; border-radius:3px;">
+                        <strong style="color:#155724;">SCAN BERHASIL!</strong><br>
+                        <small style="color:#155724;">Semua data terdeteksi. Silakan cek kembali sebelum hitung analisis.</small>
+                    </div>`;
+                }
+
+                statusMsg.innerHTML = statusHTML;
+
             } catch (err) {
-                status.innerText = "GAGAL MENGHUBUNGI SERVER.";
+                clearInterval(loadingInterval);
+                statusMsg.innerHTML = `<div style="background:#f8d7da; border:1px solid #dc3545; padding:8px; border-radius:3px;">
+                    <span style="color:#721c24;"><strong>ERROR</strong><br>
+                    <small>Gagal menghubungi server. Pastikan app.py berjalan (python app.py).</small></span>
+                </div>`;
             }
         };
 
-        function prosesHitung() {
+        function hitung() {4
             const m = parseFloat(document.getElementById('multiplier').value) || 1;
-            const data = {
-                gula: (parseFloat(document.getElementById('v-gula').value) || 0) * m,
-                lemak: (parseFloat(document.getElementById('v-lemak').value) || 0) * m,
-                garam: (parseFloat(document.getElementById('v-garam').value) || 0) * m,
-                energi: (parseFloat(document.getElementById('v-energi').value) || 0) * m
+            const limits = { gula: 50, lemak: 67, garam: 2000, energi: 2100 };
+            const units = { energi: 'kkal', gula: 'g', lemak: 'g', garam: 'mg' };
+            const keys = ['energi', 'gula', 'garam', 'lemak'];
+
+            // Buat summary input data untuk PDF
+            const inputVals = {
+                energi: parseFloat(document.getElementById('v-energi').value) || 0,
+                gula: parseFloat(document.getElementById('v-gula').value) || 0,
+                garam: parseFloat(document.getElementById('v-garam').value) || 0,
+                lemak: parseFloat(document.getElementById('v-lemak').value) || 0
             };
 
-            const batas = { gula: 50, lemak: 67, garam: 2000, energi: 2100 };
-            let high = 0; let med = 0; let html = "";
+            let inputSummary = `<div style="margin-bottom: 5px;"><strong>Jumlah Sajian:</strong> ${m}</div>`;
+            inputSummary += `<div><strong>Per Sajian:</strong> Energi ${inputVals.energi} kkal, Gula ${inputVals.gula} g, Garam ${inputVals.garam} mg, Lemak ${inputVals.lemak} g</div>`;
+            document.getElementById('input-data').innerHTML = inputSummary;
 
-            for (let key in data) {
-                let persen = (data[key] / batas[key]) * 100;
-                let label = "RENDAH"; let color = "bg-green";
+            let html = ""; let tinggi = 0; let sedang = 0;
 
-                if (persen >= 67) { label = "TINGGI"; color = "bg-red"; high++; }
-                else if (persen >= 34) { label = "SEDANG"; color = "bg-yellow"; med++; }
+            keys.forEach(k => {
+                const val = (inputVals[k]) * m;
+                const p = (val / limits[k]) * 100;
+                let cat = "RENDAH"; let cls = "bg-green";
+
+                if (p >= 67) { cat = "TINGGI"; cls = "bg-red"; tinggi++; }
+                else if (p >= 34) { cat = "SEDANG"; cls = "bg-yellow"; sedang++; }
+
+                const displayP = p > 100 ? 100 : p; // Bar mentok di 100%
 
                 html += `
-                <div class="nutri-card">
-                    <span class="tag ${color}">${label}</span>
-                    <b>${key.toUpperCase()}</b><br>
-                    Total: ${data[key].toFixed(1)} | Beban: ${persen.toFixed(1)}%
+                <div style="margin-bottom:15px; page-break-inside: avoid; max-width: 100%; overflow: hidden;">
+                    <div style="font-size:11px; font-weight:bold; margin-bottom: 5px;">
+                        ${k.toUpperCase()}: ${cat} (${Math.round(p)}%)
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill ${cls}" style="width: ${displayP}%"></div>
+                    </div>
+                    <div style="font-size:10px; margin-top: 3px;">Konsumsi: ${Math.round(val)} ${units[k]} | Batas: ${limits[k]} ${units[k]}</div>
                 </div>`;
-            }
+            });
 
             document.getElementById('details').innerHTML = html;
-            const sum = document.getElementById('summary');
-            document.getElementById('resultArea').style.display = "block";
+            const v = document.getElementById('finalVerdict');
 
-            if (high >= 2) {
-                sum.className = "summary-box bg-red";
-                sum.innerText = "TINGGI, SEBAIKNYA SANGAT DIBATASI";
-            } else if (high === 1) {
-                sum.className = "summary-box bg-orange";
-                sum.innerText = "KURANGI PORSI KONSUMSI";
-            } else if (med >= 1) {
-                sum.className = "summary-box bg-yellow";
-                sum.innerText = "DAPAT DIKONSUMSI SECUKUPNYA";
-            } else {
-                sum.className = "summary-box bg-green";
-                sum.innerText = "AMAN, KONSUMSI WAJAR";
-            }
+            if (tinggi >= 2) v.innerHTML = "SEBAIKNYA SANGAT DIBATASI<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
+            else if (tinggi === 1) v.innerHTML = "DISARANKAN UNTUK MENGURANGI PORSI<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
+            else if (sedang >= 1) v.innerHTML = "DAPAT DIKONSUMSI SECUKUPNYA<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
+            else v.innerHTML = "DAPAT DIKONSUMSI DALAM PORSI WAJAR<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
+
+            document.getElementById('resultArea').style.display = "block";
+        }
+
+        function exportPDF() {
+            const element = document.getElementById('pdf-content');
+
+            // Tampilkan elemen PDF-only dan atur width
+            const pdfOnly = element.querySelectorAll('.pdf-only');
+            pdfOnly.forEach(el => el.style.display = 'block');
+
+            // Set fixed width untuk consistent rendering
+            const originalWidth = element.style.width;
+            element.style.width = '700px';
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: 'Laporan-NutriScan.pdf',
+                image: { type: 'jpeg', quality: 0.95 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    width: 700,
+                    windowWidth: 700
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Reset width dan sembunyikan kembali elemen PDF-only
+                element.style.width = originalWidth;
+                pdfOnly.forEach(el => el.style.display = 'none');
+            });
         }
     </script>
 </body>
