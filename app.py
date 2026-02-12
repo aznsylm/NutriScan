@@ -20,7 +20,6 @@ def sanitize_ocr_text(text):
         text = text.replace(k, v)
     return text
 
-
 def check_image_quality(img):
     """Cek kualitas gambar sebelum OCR"""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img

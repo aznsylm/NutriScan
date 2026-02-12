@@ -3,223 +3,273 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>NUTRISCAN v3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan - Analisis Nutrisi Makanan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: monospace;
-            background: #f4f4f4;
-            padding: 10px;
-        }
-
-        .box {
-            background: #fff;
-            border: 2px solid #000;
-            padding: 20px;
-            max-width: 400px;
-            margin: auto;
-        }
-
-        h2 {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-
-        .input-item {
-            margin-bottom: 15px;
-        }
-
-        .input-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        input {
-            border: 1px solid #000;
-            padding: 5px;
-            width: 120px;
-            font-family: monospace;
-        }
-
-        .info-validasi {
-            font-size: 10px;
-            color: #d00;
-            margin-top: 3px;
-            min-height: 12px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 10px;
-            background: #000;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        .btn-reset {
-            background: #fff;
-            color: #000;
-            border: 1px solid #000;
-            margin-top: 10px;
-        }
-
-        /* Progress Bar Styles */
         .bar-container {
             width: 100%;
-            background: #eee;
-            height: 10px;
-            border: 1px solid #000;
-            margin: 5px 0;
-            position: relative;
+            height: 20px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
         }
 
         .bar-fill {
             height: 100%;
-            width: 0%;
-            transition: width 0.5s;
+            transition: width 0.5s ease-in-out;
+            border-radius: 4px;
         }
 
         .bg-green {
-            background: #00aa00;
+            background: #10B981;
         }
 
         .bg-yellow {
-            background: #ffcc00;
+            background: #F59E0B;
         }
 
         .bg-red {
-            background: #ff0000;
+            background: #EF4444;
         }
 
-        #resultArea {
-            margin-top: 20px;
-            border-top: 2px dashed #000;
-            padding-top: 15px;
-            display: none;
+        .page-break-inside-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
-        .final-verdict {
-            text-align: center;
-            font-weight: bold;
-            padding: 10px;
-            border: 2px solid #000;
-            margin-top: 15px;
-        }
-
-        .pdf-only {
-            display: none;
-        }
-
-        #pdf-content {
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Print/PDF specific styles */
         @media print {
             .pdf-only {
                 display: block !important;
             }
 
-            body {
-                padding: 0;
-                margin: 0;
-            }
-
-            .box {
-                max-width: 100%;
-                padding: 10px;
+            .no-print {
+                display: none !important;
             }
         }
     </style>
 </head>
 
-<body>
+<body class="bg-gray-50 min-h-screen">
 
-    <div class="box">
-        <h2>NUTRISCAN</h2>
-
-        <div id="instruction" style="font-size: 11px; margin-bottom: 10px; text-align: center; color: #555;">
-            <strong>TIPS FOTO YANG BAIK:</strong><br>
-            • Foto dari depan (jangan miring)<br>
-            • Pastikan label terang & fokus<br>
-            • Hindari bayangan & pantulan cahaya<br>
-            • Jika label di botol bulat, ratakan saat foto
-        </div>
-
-        <div id="ui-input">
-            <input type="file" id="fileInp" accept="image/*" style="width:100%; margin-bottom:15px; font-size: 11px;">
-
-            <div class="input-item" style="background: #ffffcc; padding: 5px; border: 1px solid #999;">
-                <div class="input-row">
-                    <span>JUMLAH SAJIAN:</span>
-                    <input type="number" id="multiplier" value="1" min="1" oninput="validate(this)">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+            <div class="text-center">
+                <!-- Logo placeholder - ganti dengan <img> jika ada logo -->
+                <div class="inline-block mb-2">
+                    <div
+                        class="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center text-white text-2xl font-bold">
+                        NS
+                    </div>
                 </div>
-                <div id="err-multiplier" class="info-validasi"></div>
+                <h1 class="text-3xl font-bold text-gray-900">NutriScan</h1>
+                <p class="text-sm text-gray-600 mt-1">Analisis Nutrisi Makanan Berbasis OCR</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+
+        <!-- Info Cards -->
+        <div id="instruction" class="grid md:grid-cols-2 gap-4 mb-6">
+            <!-- Batas Harian -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-semibold text-blue-900 mb-3 text-sm">BATAS HARIAN (Batas Regulasi Indonesia)</h3>
+                <div class="space-y-1 text-xs text-blue-800">
+                    <div>
+                        <span>Energi:</span>
+                        <span class="font-medium">2100 kkal</span>
+                    </div>
+                    <div>
+                        <span>Gula:</span>
+                        <span class="font-medium">50 g</span>
+                    </div>
+                    <div>
+                        <span>Garam:</span>
+                        <span class="font-medium">2000 mg</span>
+                    </div>
+                    <div>
+                        <span>Lemak Total:</span>
+                        <span class="font-medium">67 g</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="input-item">
-                <div class="input-row"><span>ENERGI (kkal):</span><input type="number" id="v-energi" step="0.001"
-                        oninput="validate(this)"></div>
-                <div id="err-energi" class="info-validasi"></div>
-            </div>
-            <div class="input-item">
-                <div class="input-row"><span>GULA (g):</span><input type="number" id="v-gula" step="0.001"
-                        oninput="validate(this)"></div>
-                <div id="err-gula" class="info-validasi"></div>
-            </div>
-            <div class="input-item">
-                <div class="input-row"><span>GARAM (mg):</span><input type="number" id="v-garam" step="0.001"
-                        oninput="validate(this)"></div>
-                <div id="err-garam" class="info-validasi"></div>
-            </div>
-            <div class="input-item">
-                <div class="input-row"><span>LEMAK (g):</span><input type="number" id="v-lemak" step="0.001"
-                        oninput="validate(this)"></div>
-                <div id="err-lemak" class="info-validasi"></div>
-            </div>
+            <!-- Tips Foto -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-semibold text-blue-900 mb-3 text-sm">TIPS FOTO YANG BAIK</h3>
 
-            <button class="btn" onclick="hitung()">HITUNG ANALISIS</button>
-            <button class="btn btn-reset" onclick="window.location.reload()">RESET / SCAN ULANG</button>
+                <ul class="space-y-1 text-xs text-blue-800">
+                    <li>• Foto dari depan (jangan miring)</li>
+                    <li>• Pastikan label terang & fokus</li>
+                    <li>• Hindari bayangan & pantulan cahaya</li>
+                    <li>• Jika label di botol bulat, ratakan saat foto</li>
+                </ul>
+            </div>
         </div>
 
-        <div id="resultArea">
+        <!-- Input Card -->
+        <div id="ui-input" class="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Scan & Input Data Nutrisi</h2>
+
+            <!-- File Upload -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Upload Foto Label Nutrisi</label>
+                <input type="file" id="fileInp" accept="image/*"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-secondary cursor-pointer border border-gray-300 rounded-md">
+
+                <!-- Scan Status Area -->
+                <div id="scan-status" class="mt-3 min-h-[40px]"></div>
+            </div>
+
+            <!-- Input Fields -->
+            <div class="space-y-4">
+                <!-- Jumlah Sajian -->
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah Sajian</label>
+                    <input type="number" id="multiplier" value="1" min="1" oninput="validate(this)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <div id="err-multiplier" class="text-xs text-red-600 mt-1 min-h-[16px]"></div>
+                </div>
+
+                <!-- Grid Input Nutrisi -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Energi -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Energi (kkal)</label>
+                        <input type="number" id="v-energi" step="0.001" oninput="validate(this); checkInputs();"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div id="err-energi" class="text-xs text-red-600 mt-1 min-h-[16px]"></div>
+                    </div>
+
+                    <!-- Gula -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gula (g)</label>
+                        <input type="number" id="v-gula" step="0.001" oninput="validate(this); checkInputs();"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div id="err-gula" class="text-xs text-red-600 mt-1 min-h-[16px]"></div>
+                    </div>
+
+                    <!-- Garam -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Garam (mg)</label>
+                        <input type="number" id="v-garam" step="0.001" oninput="validate(this); checkInputs();"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div id="err-garam" class="text-xs text-red-600 mt-1 min-h-[16px]"></div>
+                    </div>
+
+                    <!-- Lemak -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lemak Total (g)</label>
+                        <input type="number" id="v-lemak" step="0.001" oninput="validate(this); checkInputs();"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div id="err-lemak" class="text-xs text-red-600 mt-1 min-h-[16px]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Message -->
+            <div id="input-warning" class="text-sm text-red-600 text-center mt-4 min-h-[20px]"></div>
+
+            <!-- Buttons -->
+            <div class="mt-6 space-y-3">
+                <button id="hitungBtn" onclick="hitung()" disabled
+                    class="w-full py-3 px-4 bg-primary text-white font-semibold rounded-md hover:bg-secondary transition disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500">
+                    HITUNG ANALISIS
+                </button>
+                <button id="resetBtn1" onclick="window.location.reload()"
+                    class="no-print w-full py-2 px-4 bg-white text-gray-700 font-medium border border-gray-300 rounded-md hover:bg-gray-50 transition">
+                    RESET / SCAN ULANG
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Area -->
+        <div id="resultArea" class="hidden">
             <div id="pdf-content">
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;"
-                    class="pdf-only">
-                    <h2 style="margin: 0;">LAPORAN NUTRISCAN</h2>
-                    <p style="font-size: 10px; margin: 5px 0 0 0;">Analisis Nutrisi Makanan</p>
+
+                <!-- Results Card -->
+                <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Hasil Analisis</h2>
+                    <div id="details"></div>
                 </div>
-                <div id="input-summary" class="pdf-only"
-                    style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border: 1px solid #ccc;">
-                    <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">DATA INPUT:</div>
-                    <div id="input-data" style="font-size: 10px;"></div>
-                </div>
-                <div id="details"></div>
-                <div id="finalVerdict" class="final-verdict"></div>
-                <div class="pdf-only"
-                    style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9px; text-align: center; color: #666;">
-                    Generated by NUTRISCAN - Analisis berdasarkan standar Kemenkes/WHO
+
+                <!-- Final Verdict -->
+                <div id="finalVerdict"
+                    class="bg-white border-2 border-gray-300 rounded-lg p-6 text-center font-semibold text-gray-900">
                 </div>
             </div>
-            <button class="btn" style="background: #555;" onclick="exportPDF()">SIMPAN PDF</button>
+
+            <!-- Action Buttons -->
+            <div class="no-print mt-6 space-y-3">
+                <button onclick="exportPDF()"
+                    class="w-full py-3 px-4 bg-gray-700 text-white font-semibold rounded-md hover:bg-gray-800 transition">
+                    SIMPAN PDF
+                </button>
+                <button id="resetBtn2" onclick="window.location.reload()" style="display: none;"
+                    class="w-full py-2 px-4 bg-white text-gray-700 font-medium border border-gray-300 rounded-md hover:bg-gray-50 transition">
+                    RESET / SCAN ULANG
+                </button>
+            </div>
         </div>
-    </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="no-print bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-4xl mx-auto px-4 py-6 text-center text-sm text-gray-600">
+            <p>&copy; 2026 NutriScan. Analisis nutrisi berdasarkan Batas Regulasi Indonesia.</p>
+        </div>
+    </footer>
 
     <script>
+        // Cek apakah minimal 1 input terisi
+        function checkInputs() {
+            const energi = parseFloat(document.getElementById('v-energi').value) || 0;
+            const gula = parseFloat(document.getElementById('v-gula').value) || 0;
+            const garam = parseFloat(document.getElementById('v-garam').value) || 0;
+            const lemak = parseFloat(document.getElementById('v-lemak').value) || 0;
+
+            const btn = document.getElementById('hitungBtn');
+            const warning = document.getElementById('input-warning');
+
+            // Jika semua kosong atau 0
+            if (energi === 0 && gula === 0 && garam === 0 && lemak === 0) {
+                btn.disabled = true;
+                warning.innerText = "⚠️ Minimal isi 1 data nutrisi untuk analisis";
+            } else {
+                btn.disabled = false;
+                warning.innerText = "";
+            }
+        }
+
         function validate(el) {
             const id = el.id.replace('v-', '');
             const errEl = document.getElementById('err-' + id);
             const val = parseFloat(el.value);
             errEl.innerText = "";
 
-            // Batas maksimal per field sesuai standar Kemenkes/WHO
+            // Batas maksimal per field sesuai Batas Regulasi Indonesia
             const limits = {
                 'energi': 2100,
                 'gula': 50,
@@ -252,13 +302,13 @@
             if (!file) return;
 
             // Tampilkan status loading dengan animasi
-            const statusMsg = document.getElementById('instruction');
+            const statusMsg = document.getElementById('scan-status');
             let dots = 0;
-            statusMsg.innerHTML = "<strong style='color:#0066cc;'>SCANNING</strong>";
+            statusMsg.innerHTML = "<div class='text-center text-primary font-semibold'>SCANNING</div>";
 
             const loadingInterval = setInterval(() => {
                 dots = (dots + 1) % 4;
-                statusMsg.innerHTML = `<strong style='color:#0066cc;'>SCANNING${'.'.repeat(dots)}</strong><br><small>Harap tunggu 3-6 detik</small>`;
+                statusMsg.innerHTML = `<div class='text-center'><strong class='text-primary'>SCANNING${'.'.repeat(dots)}</strong><br><small class='text-gray-600'>Harap tunggu 3-6 detik</small></div>`;
             }, 500);
 
             const fd = new FormData();
@@ -283,12 +333,15 @@
                     validate(input); // Jalankan validasi real-time untuk setiap input
                 });
 
+                // Cek apakah button harus di-enable
+                checkInputs();
+
                 // Build status message with quality info
                 let statusHTML = "";
 
                 // Show processing info
                 if (processing) {
-                    statusHTML += `<div style="font-size:10px; color:#666; margin-bottom:5px;">Proses: ${processing.time}s | Terdeteksi: ${processing.score}</div>`;
+                    statusHTML += `<div class="text-xs text-gray-600 mb-2">Proses: ${processing.time}s | Terdeteksi: ${processing.score}</div>`;
                 }
 
                 // Quality warnings
@@ -301,22 +354,22 @@
                         'SHADOW_TIDAK_MERATA': 'Bayangan tidak merata'
                     };
                     const issueTexts = quality.issues.map(iss => issueMap[iss] || iss);
-                    statusHTML += `<div style="background:#fff3cd; border:1px solid #ffc107; padding:5px; margin:5px 0; border-radius:3px;">
-                        <strong style="color:#856404;">KUALITAS FOTO:</strong><br>
-                        <small style="color:#856404;">${issueTexts.join(', ')}</small>
+                    statusHTML += `<div class="bg-yellow-50 border border-yellow-300 rounded-md p-3 mb-3">
+                        <strong class="text-yellow-900 text-sm">KUALITAS FOTO:</strong><br>
+                        <small class="text-yellow-800 text-xs">${issueTexts.join(', ')}</small>
                     </div>`;
                 }
 
                 // FITUR ADOPSI: Pesan Fallback jika data tidak ditemukan
                 if (missing.length > 0) {
-                    statusHTML += `<div style="background:#f8d7da; border:1px solid #dc3545; padding:5px; margin:5px 0; border-radius:3px;">
-                        <strong style="color:#721c24;">DATA TIDAK LENGKAP:</strong><br>
-                        <small style="color:#721c24;">${missing.join(', ').toUpperCase()} tidak terdeteksi. Mohon isi manual atau foto ulang dengan tips di atas.</small>
+                    statusHTML += `<div class="bg-red-50 border border-red-300 rounded-md p-3 mb-3">
+                        <strong class="text-red-900 text-sm">DATA TIDAK LENGKAP:</strong><br>
+                        <small class="text-red-800 text-xs">${missing.join(', ').toUpperCase()} tidak terdeteksi. Mohon isi manual atau foto ulang dengan tips di atas.</small>
                     </div>`;
                 } else {
-                    statusHTML += `<div style="background:#d4edda; border:1px solid #28a745; padding:5px; margin:5px 0; border-radius:3px;">
-                        <strong style="color:#155724;">SCAN BERHASIL!</strong><br>
-                        <small style="color:#155724;">Semua data terdeteksi. Silakan cek kembali sebelum hitung analisis.</small>
+                    statusHTML += `<div class="bg-green-50 border border-green-300 rounded-md p-3 mb-3">
+                        <strong class="text-green-900 text-sm">SCAN BERHASIL!</strong><br>
+                        <small class="text-green-800 text-xs">Semua data terdeteksi. Silakan cek kembali sebelum hitung analisis.</small>
                     </div>`;
                 }
 
@@ -324,17 +377,19 @@
 
             } catch (err) {
                 clearInterval(loadingInterval);
-                statusMsg.innerHTML = `<div style="background:#f8d7da; border:1px solid #dc3545; padding:8px; border-radius:3px;">
-                    <span style="color:#721c24;"><strong>ERROR</strong><br>
-                    <small>Gagal menghubungi server. Pastikan app.py berjalan (python app.py).</small></span>
+                statusMsg.innerHTML = `<div class="bg-red-50 border border-red-300 rounded-md p-3">
+                    <span class="text-red-900"><strong>ERROR</strong><br>
+                    <small class="text-red-800">Gagal menghubungi server. Pastikan app.py berjalan (python app.py).</small></span>
                 </div>`;
             }
         };
 
-        function hitung() {4
+        function hitung() {
+            4
             const m = parseFloat(document.getElementById('multiplier').value) || 1;
             const limits = { gula: 50, lemak: 67, garam: 2000, energi: 2100 };
             const units = { energi: 'kkal', gula: 'g', lemak: 'g', garam: 'mg' };
+            const labels = { energi: 'ENERGI', gula: 'GULA', garam: 'GARAM', lemak: 'LEMAK TOTAL' };
             const keys = ['energi', 'gula', 'garam', 'lemak'];
 
             // Buat summary input data untuk PDF
@@ -345,43 +400,64 @@
                 lemak: parseFloat(document.getElementById('v-lemak').value) || 0
             };
 
-            let inputSummary = `<div style="margin-bottom: 5px;"><strong>Jumlah Sajian:</strong> ${m}</div>`;
-            inputSummary += `<div><strong>Per Sajian:</strong> Energi ${inputVals.energi} kkal, Gula ${inputVals.gula} g, Garam ${inputVals.garam} mg, Lemak ${inputVals.lemak} g</div>`;
-            document.getElementById('input-data').innerHTML = inputSummary;
-
             let html = ""; let tinggi = 0; let sedang = 0;
 
             keys.forEach(k => {
                 const val = (inputVals[k]) * m;
                 const p = (val / limits[k]) * 100;
                 let cat = "RENDAH"; let cls = "bg-green";
+                let catColor = "text-green-700"; let catBg = "bg-green-50";
 
-                if (p >= 67) { cat = "TINGGI"; cls = "bg-red"; tinggi++; }
-                else if (p >= 34) { cat = "SEDANG"; cls = "bg-yellow"; sedang++; }
+                if (p >= 67) {
+                    cat = "TINGGI"; cls = "bg-red"; tinggi++;
+                    catColor = "text-red-700"; catBg = "bg-red-50";
+                }
+                else if (p >= 34) {
+                    cat = "SEDANG"; cls = "bg-yellow"; sedang++;
+                    catColor = "text-yellow-700"; catBg = "bg-yellow-50";
+                }
 
                 const displayP = p > 100 ? 100 : p; // Bar mentok di 100%
 
                 html += `
-                <div style="margin-bottom:15px; page-break-inside: avoid; max-width: 100%; overflow: hidden;">
-                    <div style="font-size:11px; font-weight:bold; margin-bottom: 5px;">
-                        ${k.toUpperCase()}: ${cat} (${Math.round(p)}%)
+                <div class="mb-6 page-break-inside-avoid">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-base font-semibold text-gray-900">${labels[k]}</h3>
+                        <span class="px-3 py-1 ${catBg} ${catColor} text-xs font-semibold rounded-full">${cat}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">
+                        <span class="font-medium text-gray-900">${Math.round(val)}${units[k]}</span> dari ${limits[k]}${units[k]} (${Math.round(p)}%)
                     </div>
                     <div class="bar-container">
                         <div class="bar-fill ${cls}" style="width: ${displayP}%"></div>
                     </div>
-                    <div style="font-size:10px; margin-top: 3px;">Konsumsi: ${Math.round(val)} ${units[k]} | Batas: ${limits[k]} ${units[k]}</div>
                 </div>`;
             });
 
             document.getElementById('details').innerHTML = html;
             const v = document.getElementById('finalVerdict');
 
-            if (tinggi >= 2) v.innerHTML = "SEBAIKNYA SANGAT DIBATASI<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
-            else if (tinggi === 1) v.innerHTML = "DISARANKAN UNTUK MENGURANGI PORSI<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
-            else if (sedang >= 1) v.innerHTML = "DAPAT DIKONSUMSI SECUKUPNYA<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
-            else v.innerHTML = "DAPAT DIKONSUMSI DALAM PORSI WAJAR<br><small>(Perhatikan juga konsumsi Anda sehari-hari.)</small>";
+            if (tinggi >= 2) {
+                v.className = "bg-red-50 border-2 border-red-500 rounded-lg p-6 text-center font-semibold text-red-800";
+                v.innerHTML = "SEBAIKNYA SANGAT DIBATASI<br><small class='font-normal text-sm'>Perhatikan juga konsumsi Anda sehari-hari.</small>";
+            }
+            else if (tinggi === 1) {
+                v.className = "bg-orange-50 border-2 border-orange-500 rounded-lg p-6 text-center font-semibold text-orange-800";
+                v.innerHTML = "DISARANKAN UNTUK MENGURANGI PORSI<br><small class='font-normal text-sm'>Perhatikan juga konsumsi Anda sehari-hari.</small>";
+            }
+            else if (sedang >= 1) {
+                v.className = "bg-yellow-50 border-2 border-yellow-500 rounded-lg p-6 text-center font-semibold text-yellow-800";
+                v.innerHTML = "DAPAT DIKONSUMSI SECUKUPNYA<br><small class='font-normal text-sm'>Perhatikan juga konsumsi Anda sehari-hari.</small>";
+            }
+            else {
+                v.className = "bg-green-50 border-2 border-green-500 rounded-lg p-6 text-center font-semibold text-green-800";
+                v.innerHTML = "AMAN, DAPAT DIKONSUMSI DALAM PORSI WAJAR<br><small class='font-normal text-sm'>Perhatikan juga konsumsi Anda sehari-hari.</small>";
+            }
 
-            document.getElementById('resultArea').style.display = "block";
+            // Tampilkan hasil dan pindahkan button reset
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('resetBtn1').style.display = "none"; // Hide button di atas
+            document.getElementById('resetBtn2').style.display = "block"; // Show button di bawah
         }
 
         function exportPDF() {
@@ -419,6 +495,11 @@
                 pdfOnly.forEach(el => el.style.display = 'none');
             });
         }
+
+        // Jalankan checkInputs saat page load
+        window.addEventListener('DOMContentLoaded', function () {
+            checkInputs();
+        });
     </script>
 </body>
 
