@@ -2,11 +2,15 @@
 <html lang="id">
 
 <head>
+    <!-- Meta tags untuk encoding dan responsive -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NutriScan - Analisis Nutrisi Makanan</title>
+    
+    <!-- Library Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Konfigurasi Tailwind: Warna custom NutriScan -->
     <script>
         tailwind.config = {
             theme: {
@@ -22,8 +26,15 @@
             }
         }
     </script>
+    
+    <!-- Font Inter dari Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- ========================================
+         CSS CUSTOM - Styling tambahan
+         ======================================== -->
     <style>
+        /* Style untuk bar progress nutrisi */
         .bar-container {
             width: 100%;
             height: 20px;
@@ -39,6 +50,7 @@
             border-radius: 4px;
         }
 
+        /* Warna untuk kategori nutrisi */
         .bg-green {
             background: #10B981;
         }
@@ -51,12 +63,29 @@
             background: #EF4444;
         }
 
+        /* Hindari page break di tengah elemen saat print */
         .page-break-inside-avoid {
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
+        /* Style khusus saat cetak/simpan PDF */
         @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            #pdf-content, #pdf-content * {
+                visibility: visible;
+            }
+            
+            #pdf-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            
             .pdf-only {
                 display: block !important;
             }
@@ -68,84 +97,85 @@
     </style>
 </head>
 
+<!-- ========================================
+     BAGIAN BODY - Konten Halaman
+     ======================================== -->
 <body class="bg-gray-50 min-h-screen">
 
-    <!-- Header -->
+    <!-- ========================================
+         HEADER - Logo NutriScan
+         ======================================== -->
     <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-4xl mx-auto px-4 py-6">
+        <div class="max-w-4xl mx-auto px-2 sm:px-4 py-2">
             <div class="text-center">
-                <!-- Logo placeholder - ganti dengan <img> jika ada logo -->
+                <!-- Logo -->
                 <div class="inline-block mb-2">
-                    <div
-                        class="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center text-white text-2xl font-bold">
-                        NS
-                    </div>
+                    <img src="/static/Logo.png" alt="NutriScan Logo" class="w-20 h-20 mx-auto">
                 </div>
-                <h1 class="text-3xl font-bold text-gray-900">NutriScan</h1>
-                <p class="text-sm text-gray-600 mt-1">Analisis Nutrisi Makanan Berbasis OCR</p>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-4xl mx-auto px-4 py-8">
+    <!-- ========================================
+         MAIN CONTENT - Konten Utama
+         ======================================== -->
+    <main class="max-w-4xl mx-auto px-2 sm:px-4 py-6 sm:py-8">
 
-        <!-- Info Cards -->
-        <div id="instruction" class="grid md:grid-cols-2 gap-4 mb-6">
+        <!-- ========================================
+             BAGIAN 1: Info Cards (Batas Harian & Tips)
+             ======================================== -->
+        <div id="instruction" class="space-y-4 mb-6">
             <!-- Batas Harian -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 class="font-semibold text-blue-900 mb-3 text-sm">BATAS HARIAN (Batas Regulasi Indonesia)</h3>
-                <div class="space-y-1 text-xs text-blue-800">
-                    <div>
-                        <span>Energi:</span>
-                        <span class="font-medium">2100 kkal</span>
-                    </div>
-                    <div>
-                        <span>Gula:</span>
-                        <span class="font-medium">50 g</span>
-                    </div>
-                    <div>
-                        <span>Garam:</span>
-                        <span class="font-medium">2000 mg</span>
-                    </div>
-                    <div>
-                        <span>Lemak Total:</span>
-                        <span class="font-medium">67 g</span>
-                    </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
+                <h3 class="font-semibold text-blue-900 mb-2 text-sm text-center">BATAS HARIAN (Batas Regulasi Indonesia)</h3>
+                <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-xs text-blue-800">
+                    <span class="whitespace-nowrap"><strong>Energi:</strong> 2100 kkal</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap"><strong>Gula:</strong> 50 g</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap"><strong>Garam:</strong> 2000 mg</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap"><strong>Lemak Total:</strong> 67 g</span>
                 </div>
             </div>
 
             <!-- Tips Foto -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 class="font-semibold text-blue-900 mb-3 text-sm">TIPS FOTO YANG BAIK</h3>
-
-                <ul class="space-y-1 text-xs text-blue-800">
-                    <li>• Foto dari depan (jangan miring)</li>
-                    <li>• Pastikan label terang & fokus</li>
-                    <li>• Hindari bayangan & pantulan cahaya</li>
-                    <li>• Jika label di botol bulat, ratakan saat foto</li>
-                </ul>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
+                <h3 class="font-semibold text-blue-900 mb-2 text-sm text-center">TIPS FOTO YANG BAIK</h3>
+                <div class="flex flex-wrap justify-center items-center gap-x-2 gap-y-1 text-xs text-blue-800">
+                    <span class="whitespace-nowrap">Foto lurus & fokus (jangan blur)</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap">Cukup dekat agar tulisan jelas</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap">Cahaya merata, hindari bayangan & silau</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap">Fokus ke tabel "Informasi Nilai Gizi"</span>
+                    <span class="text-blue-300 hidden sm:inline">•</span>
+                    <span class="whitespace-nowrap">Ratakan label jika di kemasan bulat</span>
+                </div>
             </div>
         </div>
 
-        <!-- Input Card -->
-        <div id="ui-input" class="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Scan & Input Data Nutrisi</h2>
+        <!-- ========================================
+             BAGIAN 2: Input Card (Upload & Manual Input)
+             ======================================== -->
+        <div id="ui-input" class="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 mb-6">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Scan & Input Data Nutrisi</h2>
 
-            <!-- File Upload -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Upload Foto Label Nutrisi</label>
+            <!-- Upload foto label makanan -->
+            <div class="mb-1">
                 <input type="file" id="fileInp" accept="image/*"
                     class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-secondary cursor-pointer border border-gray-300 rounded-md">
 
                 <!-- Scan Status Area -->
+                <!-- Tempat tampil status scan & hasil OCR -->
                 <div id="scan-status" class="mt-3 min-h-[40px]"></div>
             </div>
 
-            <!-- Input Fields -->
+            <!-- Form input manual data nutrisi -->
             <div class="space-y-4">
                 <!-- Jumlah Sajian -->
-                <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-3 sm:p-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah Sajian</label>
                     <input type="number" id="multiplier" value="1" min="1" oninput="validate(this)"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
@@ -189,9 +219,10 @@
             </div>
 
             <!-- Warning Message -->
+            <!-- Pesan warning jika belum isi input -->
             <div id="input-warning" class="text-sm text-red-600 text-center mt-4 min-h-[20px]"></div>
 
-            <!-- Buttons -->
+            <!-- Tombol aksi utama -->
             <div class="mt-6 space-y-3">
                 <button id="hitungBtn" onclick="hitung()" disabled
                     class="w-full py-3 px-4 bg-primary text-white font-semibold rounded-md hover:bg-secondary transition disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500">
@@ -204,27 +235,59 @@
             </div>
         </div>
 
-        <!-- Result Area -->
+        <!-- ========================================
+             BAGIAN 3: Result Area (Hasil Analisis)
+             Hidden sampai tombol HITUNG diklik
+             ======================================== -->
         <div id="resultArea" class="hidden">
+            <!-- Container untuk konten yang akan di-print/PDF -->
             <div id="pdf-content">
+                
+                <!-- Header khusus untuk PDF (hidden di web) -->
+                <div class="pdf-only hidden text-center mb-6 pb-4 border-b-2 border-gray-300">
+                    <img src="/static/Logo.png" alt="NutriScan Logo" class="w-24 h-24 mx-auto mb-3">
+                    <h1 class="text-2xl font-bold text-gray-900">NutriScan</h1>
+                    <p class="text-sm text-gray-600 mt-1">Laporan Analisis Nutrisi Makanan</p>
+                </div>
 
-                <!-- Results Card -->
-                <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Hasil Analisis</h2>
+                <!-- Info Batas Harian khusus untuk PDF -->
+                <div class="pdf-only hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                    <h3 class="font-semibold text-blue-900 mb-2 text-sm text-center">BATAS HARIAN (Batas Regulasi Indonesia)</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-xs text-blue-800">
+                        <span class="whitespace-nowrap"><strong>Energi:</strong> 2100 kkal</span>
+                        <span class="text-blue-300">•</span>
+                        <span class="whitespace-nowrap"><strong>Gula:</strong> 50 g</span>
+                        <span class="text-blue-300">•</span>
+                        <span class="whitespace-nowrap"><strong>Garam:</strong> 2000 mg</span>
+                        <span class="text-blue-300">•</span>
+                        <span class="whitespace-nowrap"><strong>Lemak Total:</strong> 67 g</span>
+                    </div>
+                </div>
+
+                <!-- Card hasil analisis nutrisi (bar progress + kategori) -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 text-center">Hasil Analisis Nutrisi</h2>
+                    <!-- Tempat hasil perhitungan diisi oleh JS -->
                     <div id="details"></div>
                 </div>
 
-                <!-- Final Verdict -->
+                <!-- Kesimpulan akhir (Aman/Sedang/Tinggi/Dibatasi) -->
                 <div id="finalVerdict"
                     class="bg-white border-2 border-gray-300 rounded-lg p-6 text-center font-semibold text-gray-900">
                 </div>
+
+                <!-- Footer khusus untuk PDF -->
+                <div class="pdf-only hidden mt-6 pt-4 border-t border-gray-300 text-center text-xs text-gray-600">
+                    <p>© 2026 NutriScan - Analisis nutrisi berdasarkan Batas Regulasi Indonesia</p>
+                    <p class="mt-1">Dokumen ini dihasilkan secara otomatis</p>
+                </div>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Tombol aksi hasil (hidden saat print) -->
             <div class="no-print mt-6 space-y-3">
                 <button onclick="exportPDF()"
                     class="w-full py-3 px-4 bg-gray-700 text-white font-semibold rounded-md hover:bg-gray-800 transition">
-                    SIMPAN PDF
+                    CETAK / SIMPAN PDF
                 </button>
                 <button id="resetBtn2" onclick="window.location.reload()" style="display: none;"
                     class="w-full py-2 px-4 bg-white text-gray-700 font-medium border border-gray-300 rounded-md hover:bg-gray-50 transition">
@@ -235,15 +298,24 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- ========================================
+         FOOTER - Copyright
+         ======================================== -->
     <footer class="no-print bg-white border-t border-gray-200 mt-12">
-        <div class="max-w-4xl mx-auto px-4 py-6 text-center text-sm text-gray-600">
+        <div class="max-w-4xl mx-auto px-2 sm:px-4 py-6 text-center text-sm text-gray-600">
             <p>&copy; 2026 NutriScan. Analisis nutrisi berdasarkan Batas Regulasi Indonesia.</p>
         </div>
     </footer>
 
+    <!-- ========================================
+         JAVASCRIPT - Logika Aplikasi
+         ======================================== -->
     <script>
-        // Cek apakah minimal 1 input terisi
+        // ========================================
+        // FUNGSI 1: Validasi Input
+        // ========================================
+        
+        // Cek apakah minimal 1 input nutrisi terisi
         function checkInputs() {
             const energi = parseFloat(document.getElementById('v-energi').value) || 0;
             const gula = parseFloat(document.getElementById('v-gula').value) || 0;
@@ -256,13 +328,14 @@
             // Jika semua kosong atau 0
             if (energi === 0 && gula === 0 && garam === 0 && lemak === 0) {
                 btn.disabled = true;
-                warning.innerText = "⚠️ Minimal isi 1 data nutrisi untuk analisis";
+                warning.innerText = "⚠️Minimal isi 1 data nutrisi untuk analisis⚠️";
             } else {
                 btn.disabled = false;
                 warning.innerText = "";
             }
         }
 
+        // Validasi input (angka, negatif, batas maksimal)
         function validate(el) {
             const id = el.id.replace('v-', '');
             const errEl = document.getElementById('err-' + id);
@@ -297,6 +370,11 @@
             }
         }
 
+        // ========================================
+        // FUNGSI 2: Scan Foto Label (OCR)
+        // ========================================
+        
+        // Handler saat user upload foto
         document.getElementById('fileInp').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -308,7 +386,7 @@
 
             const loadingInterval = setInterval(() => {
                 dots = (dots + 1) % 4;
-                statusMsg.innerHTML = `<div class='text-center'><strong class='text-primary'>SCANNING${'.'.repeat(dots)}</strong><br><small class='text-gray-600'>Harap tunggu 3-6 detik</small></div>`;
+                statusMsg.innerHTML = `<div class='text-center'><strong class='text-primary'>SCANNING${'.'.repeat(dots)}</strong><br><small class='text-gray-600'>Harap tunggu beberapa saat</small></div>`;
             }, 500);
 
             const fd = new FormData();
@@ -342,6 +420,15 @@
                 // Show processing info
                 if (processing) {
                     statusHTML += `<div class="text-xs text-gray-600 mb-2">Proses: ${processing.time}s | Terdeteksi: ${processing.score}</div>`;
+
+                    // Show debug log
+                    if (processing.log && processing.log.length > 0) {
+                        statusHTML += `<details class="text-xs text-gray-500 mb-3"><summary class="cursor-pointer font-semibold">📊 Debug Log</summary><ul class="mt-2 space-y-1 pl-4">`;
+                        processing.log.forEach(log => {
+                            statusHTML += `<li class="font-mono">${log}</li>`;
+                        });
+                        statusHTML += `</ul></details>`;
+                    }
                 }
 
                 // Quality warnings
@@ -384,6 +471,11 @@
             }
         };
 
+        // ========================================
+        // FUNGSI 3: Hitung Analisis Nutrisi
+        // ========================================
+        
+        // Kalkulasi & tampilkan hasil analisis
         function hitung() {
             4
             const m = parseFloat(document.getElementById('multiplier').value) || 1;
@@ -460,43 +552,29 @@
             document.getElementById('resetBtn2').style.display = "block"; // Show button di bawah
         }
 
+        // ========================================
+        // FUNGSI 4: Export PDF/Print
+        // ========================================
+        
+        // Trigger dialog print browser untuk simpan PDF
         function exportPDF() {
-            const element = document.getElementById('pdf-content');
-
-            // Tampilkan elemen PDF-only dan atur width
-            const pdfOnly = element.querySelectorAll('.pdf-only');
-            pdfOnly.forEach(el => el.style.display = 'block');
-
-            // Set fixed width untuk consistent rendering
-            const originalWidth = element.style.width;
-            element.style.width = '700px';
-
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: 'Laporan-NutriScan.pdf',
-                image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    width: 700,
-                    windowWidth: 700
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait'
-                }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Reset width dan sembunyikan kembali elemen PDF-only
-                element.style.width = originalWidth;
-                pdfOnly.forEach(el => el.style.display = 'none');
-            });
+            // Tampilkan elemen yang perlu di-print
+            document.getElementById('pdf-content').classList.add('printing');
+            
+            // Trigger browser print dialog
+            window.print();
+            
+            // Cleanup setelah print dialog ditutup
+            setTimeout(() => {
+                document.getElementById('pdf-content').classList.remove('printing');
+            }, 100);
         }
 
-        // Jalankan checkInputs saat page load
+        // ========================================
+        // Initializer - Jalankan saat halaman load
+        // ========================================
+        
+        // Cek input saat pertama kali halaman dibuka
         window.addEventListener('DOMContentLoaded', function () {
             checkInputs();
         });
