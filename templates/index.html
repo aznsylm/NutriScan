@@ -30,6 +30,10 @@
     <!-- Font Inter dari Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Library untuk Export PDF (jsPDF + html2canvas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <!-- ========================================
          CSS CUSTOM - Styling tambahan
          ======================================== -->
@@ -97,14 +101,8 @@
     </style>
 </head>
 
-<!-- ========================================
-     BAGIAN BODY - Konten Halaman
-     ======================================== -->
 <body class="bg-gray-50 min-h-screen">
 
-    <!-- ========================================
-         HEADER - Logo NutriScan
-         ======================================== -->
     <header class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-4xl mx-auto px-2 sm:px-4 py-2">
             <div class="text-center">
@@ -116,9 +114,6 @@
         </div>
     </header>
 
-    <!-- ========================================
-         MAIN CONTENT - Konten Utama
-         ======================================== -->
     <main class="max-w-4xl mx-auto px-2 sm:px-4 py-6 sm:py-8">
 
         <!-- ========================================
@@ -298,23 +293,15 @@
 
     </main>
 
-    <!-- ========================================
-         FOOTER - Copyright
-         ======================================== -->
     <footer class="no-print bg-white border-t border-gray-200 mt-12">
         <div class="max-w-4xl mx-auto px-2 sm:px-4 py-6 text-center text-sm text-gray-600">
             <p>&copy; 2026 NutriScan. Analisis nutrisi berdasarkan Batas Regulasi Indonesia.</p>
         </div>
     </footer>
 
-    <!-- ========================================
-         JAVASCRIPT - Logika Aplikasi
-         ======================================== -->
     <script>
         // ========================================
         // FUNGSI 1: Validasi Input
-        // ========================================
-        
         // Cek apakah minimal 1 input nutrisi terisi
         function checkInputs() {
             const energi = parseFloat(document.getElementById('v-energi').value) || 0;
@@ -372,8 +359,6 @@
 
         // ========================================
         // FUNGSI 2: Scan Foto Label (OCR)
-        // ========================================
-        
         // Handler saat user upload foto
         document.getElementById('fileInp').onchange = async (e) => {
             const file = e.target.files[0];
@@ -473,8 +458,6 @@
 
         // ========================================
         // FUNGSI 3: Hitung Analisis Nutrisi
-        // ========================================
-        
         // Kalkulasi & tampilkan hasil analisis
         function hitung() {
             4
@@ -553,27 +536,123 @@
         }
 
         // ========================================
-        // FUNGSI 4: Export PDF/Print
+        // FUNGSI 4: Export PDF dengan jsPDF + html2canvas
+        // Generate & download PDF - MOBILE FRIENDLY!
         // ========================================
-        
-        // Trigger dialog print browser untuk simpan PDF
-        function exportPDF() {
-            // Tampilkan elemen yang perlu di-print
-            document.getElementById('pdf-content').classList.add('printing');
+        async function exportPDF() {
+            const button = event.target;
+            const originalText = button.innerHTML;
             
-            // Trigger browser print dialog
-            window.print();
-            
-            // Cleanup setelah print dialog ditutup
-            setTimeout(() => {
-                document.getElementById('pdf-content').classList.remove('printing');
-            }, 100);
+            try {
+                // Show loading state
+                button.disabled = true;
+                button.innerHTML = '<span class="animate-pulse">MEMBUAT PDF...</span>';
+                
+                // Get PDF content element
+                const element = document.getElementById('pdf-content');
+                
+                // Clone element untuk manipulasi tanpa ganggu UI
+                const clone = element.cloneNode(true);
+                clone.style.position = 'absolute';
+                clone.style.left = '-9999px';
+                clone.style.top = '0';
+                clone.style.width = '800px'; // Fixed width untuk consistent PDF
+                
+                // Show hidden elements (pdf-only class)
+                const hiddenElements = clone.querySelectorAll('.pdf-only');
+                hiddenElements.forEach(el => {
+                    el.classList.remove('hidden');
+                    el.style.display = 'block';
+                });
+                
+                // Append to body temporarily
+                document.body.appendChild(clone);
+                
+                // Wait for images to load
+                const images = clone.querySelectorAll('img');
+                await Promise.all(Array.from(images).map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve; // Continue even if image fails
+                    });
+                }));
+                
+                // Small delay untuk ensure CSS applied
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Capture with html2canvas
+                const canvas = await html2canvas(clone, {
+                    scale: 2, // High quality
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    imageTimeout: 0,
+                    removeContainer: false
+                });
+                
+                // Remove clone
+                document.body.removeChild(clone);
+                
+                // Convert to PDF with jsPDF
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                
+                // Calculate PDF dimensions (A4 size)
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+                
+                let imgWidth = pdfWidth - 20; // 10mm margin each side
+                let imgHeight = imgWidth / ratio;
+                
+                // If content taller than one page, adjust
+                if (imgHeight > pdfHeight - 20) {
+                    imgHeight = pdfHeight - 20;
+                    imgWidth = imgHeight * ratio;
+                }
+                
+                // Center image
+                const x = (pdfWidth - imgWidth) / 2;
+                const y = 10; // Top margin
+                
+                pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+                
+                // Generate filename with timestamp
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+                const filename = `NutriScan_Analisis_${timestamp}.pdf`;
+                
+                // Save PDF
+                pdf.save(filename);
+                
+                // Success feedback
+                button.innerHTML = 'BERHASIL DISIMPAN!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                button.innerHTML = 'GAGAL! COBA LAGI';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+            }
         }
 
         // ========================================
         // Initializer - Jalankan saat halaman load
-        // ========================================
-        
         // Cek input saat pertama kali halaman dibuka
         window.addEventListener('DOMContentLoaded', function () {
             checkInputs();

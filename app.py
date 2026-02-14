@@ -719,4 +719,8 @@ def scan():
 # JALANKAN APLIKASI FLASK
 # ========================================
 if __name__ == '__main__':
-    app.run(debug=True)  # Set debug=False untuk production
+    import os
+    # Ambil config dari environment variable (untuk production)
+    debug_mode = os.getenv('DEBUG', 'False') == 'True'
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
